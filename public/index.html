@@ -7,151 +7,138 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <style>
-    body { font-family: 'Plus Jakarta Sans', sans-serif; }
-  </style>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = { theme: { extend: { fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] } } } }
+  </script>
 </head>
-<body class="bg-slate-900 text-slate-100 min-h-screen selection:bg-indigo-500 selection:text-white">
-  <!-- Navigation / Header -->
-  <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-50">
-    <div class="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
+<body class="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen">
+
+  <!-- Header -->
+  <header class="bg-white border-b border-slate-200">
+    <div class="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
       <div class="flex items-center gap-3">
-        <span class="text-2xl p-2 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">📚</span>
+        <div class="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center">
+          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+        </div>
         <div>
-          <h1 class="font-bold text-lg leading-tight text-white">Smart Study Notes</h1>
-          <p class="text-xs text-slate-400">AI-Powered Abstractive Summarization</p>
+          <h1 class="text-base font-semibold text-slate-900 leading-tight">Smart Study Notes</h1>
+          <p class="text-xs text-slate-500">AI-powered text summarization</p>
         </div>
       </div>
-      <div class="flex items-center gap-2">
-        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-          DistilBART-CNN-12-6
-        </span>
-      </div>
+      <span class="hidden sm:inline-flex items-center gap-2 text-xs font-medium text-slate-600 bg-slate-100 border border-slate-200 rounded-full px-3 py-1">
+        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+        Model: DistilBART-CNN-12-6
+      </span>
     </div>
   </header>
 
-  <!-- Main Content -->
-  <main class="max-w-5xl mx-auto px-4 py-8 space-y-8">
-    <!-- Hero Header -->
-    <div class="text-center max-w-2xl mx-auto space-y-2">
-      <h2 class="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
-        Transform Heavy Text into <span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-300 to-pink-400">High-Yield Notes</span>
-      </h2>
-      <p class="text-slate-400 text-sm sm:text-base">
-        Paste academic papers, lecture notes, or complex articles to extract key concepts, calculate compression stats, and prepare flashcard bullets.
-      </p>
-    </div>
+  <main class="max-w-5xl mx-auto px-6 py-10 space-y-8">
 
-    <!-- Input Card -->
-    <div class="bg-slate-800/60 border border-slate-700/70 rounded-2xl p-5 sm:p-6 shadow-xl backdrop-blur">
-      <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
-        <label for="inputText" class="font-semibold text-sm text-slate-200 flex items-center gap-2">
-          <span>Source Passage</span>
-          <span id="charCount" class="text-xs text-slate-500 font-normal">(0 words)</span>
+    <!-- Intro -->
+    <section class="max-w-2xl">
+      <h2 class="text-3xl font-bold tracking-tight text-slate-900">Turn long text into concise study notes</h2>
+      <p class="mt-2 text-slate-600">Paste an article, lecture notes or a book chapter. The tool writes a short summary, lists the key points and shows how much shorter the text became.</p>
+    </section>
+
+    <!-- Input card -->
+    <section class="bg-white border border-slate-200 rounded-xl shadow-sm">
+      <div class="flex flex-wrap items-center justify-between gap-3 px-6 pt-5">
+        <label for="inputText" class="text-sm font-semibold text-slate-900">
+          Source text <span id="charCount" class="ml-1 font-normal text-slate-500">(0 words)</span>
         </label>
-        
-        <!-- Sample Loaders -->
-        <div class="flex items-center gap-2 text-xs flex-wrap">
-          <span class="text-slate-400">Samples:</span>
-          <button type="button" onclick="loadSample('biology')" class="px-2.5 py-1 rounded-lg bg-slate-700/60 hover:bg-slate-700 text-slate-300 transition">🌿 Biology</button>
-          <button type="button" onclick="loadSample('ai')" class="px-2.5 py-1 rounded-lg bg-slate-700/60 hover:bg-slate-700 text-slate-300 transition">🤖 AI / ML</button>
-          <button type="button" onclick="loadSample('history')" class="px-2.5 py-1 rounded-lg bg-slate-700/60 hover:bg-slate-700 text-slate-300 transition">🏛️ History</button>
-          <button type="button" onclick="clearInput()" class="px-2 py-1 text-slate-400 hover:text-slate-200 transition">Clear</button>
+        <div class="flex items-center flex-wrap gap-2 text-sm">
+          <span class="text-slate-500">Load sample:</span>
+          <button type="button" onclick="loadSample('biology')" class="px-3 py-1 rounded-md border border-slate-200 text-slate-700 hover:bg-slate-50 transition">Biology</button>
+          <button type="button" onclick="loadSample('ai')" class="px-3 py-1 rounded-md border border-slate-200 text-slate-700 hover:bg-slate-50 transition">AI / ML</button>
+          <button type="button" onclick="loadSample('history')" class="px-3 py-1 rounded-md border border-slate-200 text-slate-700 hover:bg-slate-50 transition">History</button>
+          <button type="button" onclick="clearInput()" class="px-2 py-1 text-slate-500 hover:text-slate-800 transition">Clear</button>
         </div>
       </div>
 
-      <textarea 
-        id="inputText" 
-        rows="7" 
-        class="w-full bg-slate-900/90 border border-slate-700 rounded-xl p-4 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm sm:text-base leading-relaxed resize-y transition"
-        placeholder="Paste your academic text, lecture excerpt, or book chapter here..."></textarea>
+      <div class="px-6 py-4">
+        <textarea
+          id="inputText"
+          rows="8"
+          class="w-full rounded-lg border border-slate-300 bg-white p-4 text-slate-800 placeholder-slate-400 text-base leading-relaxed resize-y focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 transition"
+          placeholder="Paste your text here..."></textarea>
+      </div>
 
-      <!-- Action Footer -->
-      <div class="mt-4 flex flex-wrap items-center justify-between gap-4 pt-3 border-t border-slate-700/50">
-        <div class="flex items-center gap-3 text-xs text-slate-400">
-          <label for="summaryMode" class="font-medium text-slate-300">Target Detail:</label>
-          <select id="summaryMode" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500">
-            <option value="balanced" selected>Balanced (Standard)</option>
-            <option value="concise">Concise (High Compression)</option>
-            <option value="detailed">Detailed (Maximum Retention)</option>
+      <div class="flex flex-wrap items-center justify-between gap-4 px-6 py-4 border-t border-slate-200 bg-slate-50 rounded-b-xl">
+        <div class="flex items-center gap-3">
+          <label for="summaryMode" class="text-sm font-medium text-slate-700">Summary length</label>
+          <select id="summaryMode" class="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600">
+            <option value="balanced" selected>Balanced</option>
+            <option value="concise">Concise (shortest)</option>
+            <option value="detailed">Detailed (longest)</option>
           </select>
         </div>
 
-        <button 
-          id="generateBtn" 
-          onclick="generateNotes()" 
-          class="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl font-semibold text-sm text-white bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 active:scale-[0.98] transition shadow-lg shadow-indigo-500/25 disabled:opacity-50 disabled:cursor-not-allowed">
+        <button
+          id="generateBtn"
+          onclick="generateNotes()"
+          class="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 active:bg-blue-800 transition shadow-sm disabled:opacity-60 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-600">
           <svg id="btnSpinner" class="hidden animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
           </svg>
-          <span id="btnText">✨ Generate Study Notes</span>
+          <span id="btnText">Generate notes</span>
         </button>
       </div>
+    </section>
+
+    <!-- Error -->
+    <div id="errorAlert" class="hidden rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
+      <div id="errorMessage">An error occurred while generating study notes.</div>
     </div>
 
-    <!-- Error Alert Banner -->
-    <div id="errorAlert" class="hidden p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-sm">
-      <div class="flex items-start gap-3">
-        <span class="text-base">⚠️</span>
-        <div id="errorMessage">An error occurred while generating study notes.</div>
-      </div>
-    </div>
+    <!-- Results -->
+    <section id="resultsCard" class="hidden space-y-6">
 
-    <!-- Results Section -->
-    <div id="resultsCard" class="hidden space-y-6 animate-fade-in">
-      <!-- Analytics Bar -->
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-        <div class="bg-slate-800/50 border border-slate-700/60 rounded-xl p-4 text-center">
-          <p class="text-xs font-medium text-slate-400">Original Length</p>
-          <p id="statOrig" class="text-2xl font-bold text-slate-200 mt-1">0</p>
-          <span class="text-[11px] text-slate-500">words</span>
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+          <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Original</p>
+          <p class="mt-1 text-2xl font-semibold text-slate-900"><span id="statOrig">0</span> <span class="text-sm font-normal text-slate-500">words</span></p>
         </div>
-        <div class="bg-slate-800/50 border border-slate-700/60 rounded-xl p-4 text-center">
-          <p class="text-xs font-medium text-slate-400">Summary Length</p>
-          <p id="statSumm" class="text-2xl font-bold text-indigo-400 mt-1">0</p>
-          <span class="text-[11px] text-slate-500">words</span>
+        <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+          <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Summary</p>
+          <p class="mt-1 text-2xl font-semibold text-slate-900"><span id="statSumm">0</span> <span class="text-sm font-normal text-slate-500">words</span></p>
         </div>
-        <div class="bg-slate-800/50 border border-slate-700/60 rounded-xl p-4 text-center">
-          <p class="text-xs font-medium text-slate-400">Words Saved</p>
-          <p id="statSaved" class="text-2xl font-bold text-emerald-400 mt-1">0</p>
-          <span class="text-[11px] text-slate-500">words</span>
+        <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+          <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Words saved</p>
+          <p class="mt-1 text-2xl font-semibold text-slate-900"><span id="statSaved">0</span> <span class="text-sm font-normal text-slate-500">words</span></p>
         </div>
-        <div class="bg-slate-800/50 border border-slate-700/60 rounded-xl p-4 text-center">
-          <p class="text-xs font-medium text-slate-400">Compression</p>
-          <p id="statPct" class="text-2xl font-bold text-pink-400 mt-1">0%</p>
-          <span class="text-[11px] text-slate-500">reduction</span>
+        <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+          <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Reduction</p>
+          <p id="statPct" class="mt-1 text-2xl font-semibold text-blue-600">0%</p>
         </div>
       </div>
 
-      <!-- Executive Summary -->
-      <div class="bg-slate-800/60 border border-slate-700/70 rounded-2xl p-6 shadow-xl space-y-3">
-        <div class="flex items-center justify-between">
-          <h3 class="font-bold text-slate-200 flex items-center gap-2">
-            <span>📝</span> Executive Summary
-          </h3>
-          <button onclick="copySummary()" class="text-xs text-slate-400 hover:text-indigo-300 flex items-center gap-1.5 transition">
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"></path></svg>
+      <div class="bg-white border border-slate-200 rounded-xl shadow-sm">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-slate-200">
+          <h3 class="text-sm font-semibold text-slate-900">Summary</h3>
+          <button onclick="copySummary()" class="inline-flex items-center gap-1.5 text-sm text-slate-600 hover:text-blue-600 transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"/></svg>
             <span id="copyLabel">Copy</span>
           </button>
         </div>
-        <p id="summaryContent" class="text-slate-200 text-sm sm:text-base leading-relaxed bg-slate-900/60 p-4 rounded-xl border border-slate-800 select-all"></p>
+        <p id="summaryContent" class="px-6 py-5 text-slate-700 leading-relaxed"></p>
       </div>
 
-      <!-- Key Takeaways / Bullets -->
-      <div class="bg-slate-800/60 border border-slate-700/70 rounded-2xl p-6 shadow-xl space-y-4">
-        <h3 class="font-bold text-slate-200 flex items-center gap-2">
-          <span>📌</span> Key Concepts & Flashcard Takeaways
-        </h3>
-        <ul id="bulletsList" class="space-y-2.5"></ul>
+      <div class="bg-white border border-slate-200 rounded-xl shadow-sm">
+        <div class="px-6 py-4 border-b border-slate-200">
+          <h3 class="text-sm font-semibold text-slate-900">Key points</h3>
+        </div>
+        <ul id="bulletsList" class="divide-y divide-slate-100"></ul>
       </div>
-    </div>
+    </section>
   </main>
 
-  <footer class="border-t border-slate-800/80 py-6 text-center text-xs text-slate-500">
-    Smart Study Notes &bull; Powered by Hugging Face Transformers &bull; Hosted on Vercel
+  <footer class="border-t border-slate-200 bg-white mt-10">
+    <div class="max-w-5xl mx-auto px-6 py-5 text-xs text-slate-500 flex flex-wrap justify-between gap-2">
+      <span>Smart Study Notes Generator</span>
+      <span>Powered by Hugging Face Transformers &middot; Hosted on Vercel</span>
+    </div>
   </footer>
 
   <script>
@@ -205,7 +192,7 @@
 
       btn.disabled = true;
       btnSpinner.classList.remove('hidden');
-      btnText.innerText = "Synthesizing...";
+      btnText.innerText = "Generating...";
 
       let minLen = 25;
       let maxLen = 140;
@@ -225,26 +212,27 @@
           throw new Error(data.error || `Server responded with status ${response.status}`);
         }
 
-        // Populate metrics
         document.getElementById('statOrig').innerText = data.original_words;
         document.getElementById('statSumm').innerText = data.summary_words;
         document.getElementById('statSaved').innerText = data.words_saved;
         document.getElementById('statPct').innerText = `${data.reduction_percentage}%`;
 
-        // Populate executive summary
         document.getElementById('summaryContent').innerText = data.summary;
 
-        // Populate bullets
         const bulletsContainer = document.getElementById('bulletsList');
         bulletsContainer.innerHTML = '';
         if (data.key_points && data.key_points.length > 0) {
           data.key_points.forEach((point, idx) => {
             const li = document.createElement('li');
-            li.className = "flex items-start gap-3 bg-slate-900/50 p-3.5 rounded-xl border border-slate-800/80 text-sm text-slate-300";
-            li.innerHTML = `
-              <span class="flex-shrink-0 w-6 h-6 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 font-semibold text-xs flex items-center justify-center">${idx + 1}</span>
-              <span class="leading-relaxed">${point}</span>
-            `;
+            li.className = "flex items-start gap-4 px-6 py-3.5 text-slate-700";
+            const num = document.createElement('span');
+            num.className = "flex-shrink-0 w-6 h-6 rounded-full bg-blue-50 text-blue-700 text-xs font-semibold flex items-center justify-center";
+            num.textContent = idx + 1;
+            const txt = document.createElement('span');
+            txt.className = "leading-relaxed";
+            txt.textContent = point;
+            li.appendChild(num);
+            li.appendChild(txt);
             bulletsContainer.appendChild(li);
           });
         }
@@ -258,7 +246,7 @@
       } finally {
         btn.disabled = false;
         btnSpinner.classList.add('hidden');
-        btnText.innerText = "✨ Generate Study Notes";
+        btnText.innerText = "Generate notes";
       }
     }
 
@@ -267,7 +255,7 @@
       if (!text) return;
       navigator.clipboard.writeText(text).then(() => {
         const label = document.getElementById('copyLabel');
-        label.innerText = 'Copied!';
+        label.innerText = 'Copied';
         setTimeout(() => label.innerText = 'Copy', 2000);
       });
     }
