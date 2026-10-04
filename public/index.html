@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Study Notes Generator</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+  </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen selection:bg-indigo-500 selection:text-white">
+  <!-- Navigation / Header -->
+  <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-50">
+    <div class="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <span class="text-2xl p-2 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">📚</span>
+        <div>
+          <h1 class="font-bold text-lg leading-tight text-white">Smart Study Notes</h1>
+          <p class="text-xs text-slate-400">AI-Powered Abstractive Summarization</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+          DistilBART-CNN-12-6
+        </span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="max-w-5xl mx-auto px-4 py-8 space-y-8">
+    <!-- Hero Header -->
+    <div class="text-center max-w-2xl mx-auto space-y-2">
+      <h2 class="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
+        Transform Heavy Text into <span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-300 to-pink-400">High-Yield Notes</span>
+      </h2>
+      <p class="text-slate-400 text-sm sm:text-base">
+        Paste academic papers, lecture notes, or complex articles to extract key concepts, calculate compression stats, and prepare flashcard bullets.
+      </p>
+    </div>
+
+    <!-- Input Card -->
+    <div class="bg-slate-800/60 border border-slate-700/70 rounded-2xl p-5 sm:p-6 shadow-xl backdrop-blur">
+      <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
+        <label for="inputText" class="font-semibold text-sm text-slate-200 flex items-center gap-2">
+          <span>Source Passage</span>
+          <span id="charCount" class="text-xs text-slate-500 font-normal">(0 words)</span>
+        </label>
+        
+        <!-- Sample Loaders -->
+        <div class="flex items-center gap-2 text-xs flex-wrap">
+          <span class="text-slate-400">Samples:</span>
+          <button type="button" onclick="loadSample('biology')" class="px-2.5 py-1 rounded-lg bg-slate-700/60 hover:bg-slate-700 text-slate-300 transition">🌿 Biology</button>
+          <button type="button" onclick="loadSample('ai')" class="px-2.5 py-1 rounded-lg bg-slate-700/60 hover:bg-slate-700 text-slate-300 transition">🤖 AI / ML</button>
+          <button type="button" onclick="loadSample('history')" class="px-2.5 py-1 rounded-lg bg-slate-700/60 hover:bg-slate-700 text-slate-300 transition">🏛️ History</button>
+          <button type="button" onclick="clearInput()" class="px-2 py-1 text-slate-400 hover:text-slate-200 transition">Clear</button>
+        </div>
+      </div>
+
+      <textarea 
+        id="inputText" 
+        rows="7" 
+        class="w-full bg-slate-900/90 border border-slate-700 rounded-xl p-4 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm sm:text-base leading-relaxed resize-y transition"
+        placeholder="Paste your academic text, lecture excerpt, or book chapter here..."></textarea>
+
+      <!-- Action Footer -->
+      <div class="mt-4 flex flex-wrap items-center justify-between gap-4 pt-3 border-t border-slate-700/50">
+        <div class="flex items-center gap-3 text-xs text-slate-400">
+          <label for="summaryMode" class="font-medium text-slate-300">Target Detail:</label>
+          <select id="summaryMode" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+            <option value="balanced" selected>Balanced (Standard)</option>
+            <option value="concise">Concise (High Compression)</option>
+            <option value="detailed">Detailed (Maximum Retention)</option>
+          </select>
+        </div>
+
+        <button 
+          id="generateBtn" 
+          onclick="generateNotes()" 
+          class="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl font-semibold text-sm text-white bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 active:scale-[0.98] transition shadow-lg shadow-indigo-500/25 disabled:opacity-50 disabled:cursor-not-allowed">
+          <svg id="btnSpinner" class="hidden animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+          </svg>
+          <span id="btnText">✨ Generate Study Notes</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Error Alert Banner -->
+    <div id="errorAlert" class="hidden p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-sm">
+      <div class="flex items-start gap-3">
+        <span class="text-base">⚠️</span>
+        <div id="errorMessage">An error occurred while generating study notes.</div>
+      </div>
+    </div>
+
+    <!-- Results Section -->
+    <div id="resultsCard" class="hidden space-y-6 animate-fade-in">
+      <!-- Analytics Bar -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+        <div class="bg-slate-800/50 border border-slate-700/60 rounded-xl p-4 text-center">
+          <p class="text-xs font-medium text-slate-400">Original Length</p>
+          <p id="statOrig" class="text-2xl font-bold text-slate-200 mt-1">0</p>
+          <span class="text-[11px] text-slate-500">words</span>
+        </div>
+        <div class="bg-slate-800/50 border border-slate-700/60 rounded-xl p-4 text-center">
+          <p class="text-xs font-medium text-slate-400">Summary Length</p>
+          <p id="statSumm" class="text-2xl font-bold text-indigo-400 mt-1">0</p>
+          <span class="text-[11px] text-slate-500">words</span>
+        </div>
+        <div class="bg-slate-800/50 border border-slate-700/60 rounded-xl p-4 text-center">
+          <p class="text-xs font-medium text-slate-400">Words Saved</p>
+          <p id="statSaved" class="text-2xl font-bold text-emerald-400 mt-1">0</p>
+          <span class="text-[11px] text-slate-500">words</span>
+        </div>
+        <div class="bg-slate-800/50 border border-slate-700/60 rounded-xl p-4 text-center">
+          <p class="text-xs font-medium text-slate-400">Compression</p>
+          <p id="statPct" class="text-2xl font-bold text-pink-400 mt-1">0%</p>
+          <span class="text-[11px] text-slate-500">reduction</span>
+        </div>
+      </div>
+
+      <!-- Executive Summary -->
+      <div class="bg-slate-800/60 border border-slate-700/70 rounded-2xl p-6 shadow-xl space-y-3">
+        <div class="flex items-center justify-between">
+          <h3 class="font-bold text-slate-200 flex items-center gap-2">
+            <span>📝</span> Executive Summary
+          </h3>
+          <button onclick="copySummary()" class="text-xs text-slate-400 hover:text-indigo-300 flex items-center gap-1.5 transition">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"></path></svg>
+            <span id="copyLabel">Copy</span>
+          </button>
+        </div>
+        <p id="summaryContent" class="text-slate-200 text-sm sm:text-base leading-relaxed bg-slate-900/60 p-4 rounded-xl border border-slate-800 select-all"></p>
+      </div>
+
+      <!-- Key Takeaways / Bullets -->
+      <div class="bg-slate-800/60 border border-slate-700/70 rounded-2xl p-6 shadow-xl space-y-4">
+        <h3 class="font-bold text-slate-200 flex items-center gap-2">
+          <span>📌</span> Key Concepts & Flashcard Takeaways
+        </h3>
+        <ul id="bulletsList" class="space-y-2.5"></ul>
+      </div>
+    </div>
+  </main>
+
+  <footer class="border-t border-slate-800/80 py-6 text-center text-xs text-slate-500">
+    Smart Study Notes &bull; Powered by Hugging Face Transformers &bull; Hosted on Vercel
+  </footer>
+
+  <script>
+    const SAMPLES = {
+      biology: "Photosynthesis is a biological process used by plants, algae, and certain bacteria to convert light energy into chemical energy. This chemical energy is stored in carbohydrate molecules, such as sugars, which are synthesized from carbon dioxide and water. In most cases, oxygen is released as a waste product. Photosynthesis is largely responsible for producing and maintaining the oxygen content of the Earth's atmosphere, and supplies most of the biological energy necessary for complex life on Earth. Without photosynthesis, the global carbon cycle would collapse, depleting the foundational food supply for terrestrial and aquatic ecosystems.",
+      ai: "Artificial neural networks are computational systems inspired by the biological neural networks that constitute animal brains. An ANN is based on a collection of connected units or nodes called artificial neurons. Backpropagation is the primary algorithm used to train feedforward neural networks. In backpropagation, the model calculates the gradient of the loss function with respect to each weight by the chain rule, computing the gradient one layer at a time, iterating backward from the output layer to update parameters using gradient descent. This optimization enables deep neural architectures to achieve superhuman accuracy on image recognition, natural language translation, and autonomous decision making.",
+      history: "The Industrial Revolution was the transition to new manufacturing processes in Great Britain, continental Europe, and the United States, that occurred during the period from around 1760 to about 1840. This transition included going from hand production methods to machines, new chemical manufacturing and iron production processes, the increasing use of steam power and water power, the development of machine tools, and the rise of the mechanized factory system. The Industrial Revolution marked a major turning point in history; almost every aspect of daily life was influenced in some way. In particular, average income and population began to exhibit unprecedented sustained growth."
+    };
+
+    const inputArea = document.getElementById('inputText');
+    const charCount = document.getElementById('charCount');
+
+    inputArea.addEventListener('input', updateCount);
+
+    function updateCount() {
+      const words = inputArea.value.trim().split(/\s+/).filter(Boolean).length;
+      charCount.innerText = `(${words} word${words === 1 ? '' : 's'})`;
+    }
+
+    function loadSample(key) {
+      if (SAMPLES[key]) {
+        inputArea.value = SAMPLES[key];
+        updateCount();
+      }
+    }
+
+    function clearInput() {
+      inputArea.value = '';
+      updateCount();
+      document.getElementById('resultsCard').classList.add('hidden');
+      document.getElementById('errorAlert').classList.add('hidden');
+    }
+
+    async function generateNotes() {
+      const text = inputArea.value.trim();
+      const mode = document.getElementById('summaryMode').value;
+      const errorAlert = document.getElementById('errorAlert');
+      const errorMessage = document.getElementById('errorMessage');
+      const resultsCard = document.getElementById('resultsCard');
+      const btn = document.getElementById('generateBtn');
+      const btnSpinner = document.getElementById('btnSpinner');
+      const btnText = document.getElementById('btnText');
+
+      errorAlert.classList.add('hidden');
+
+      if (!text) {
+        errorMessage.innerText = "Please enter or paste a text passage before generating.";
+        errorAlert.classList.remove('hidden');
+        return;
+      }
+
+      btn.disabled = true;
+      btnSpinner.classList.remove('hidden');
+      btnText.innerText = "Synthesizing...";
+
+      let minLen = 25;
+      let maxLen = 140;
+      if (mode === 'concise') { minLen = 15; maxLen = 75; }
+      else if (mode === 'detailed') { minLen = 45; maxLen = 220; }
+
+      try {
+        const response = await fetch('/api/index', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text, min_length: minLen, max_length: maxLen })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok || data.error) {
+          throw new Error(data.error || `Server responded with status ${response.status}`);
+        }
+
+        // Populate metrics
+        document.getElementById('statOrig').innerText = data.original_words;
+        document.getElementById('statSumm').innerText = data.summary_words;
+        document.getElementById('statSaved').innerText = data.words_saved;
+        document.getElementById('statPct').innerText = `${data.reduction_percentage}%`;
+
+        // Populate executive summary
+        document.getElementById('summaryContent').innerText = data.summary;
+
+        // Populate bullets
+        const bulletsContainer = document.getElementById('bulletsList');
+        bulletsContainer.innerHTML = '';
+        if (data.key_points && data.key_points.length > 0) {
+          data.key_points.forEach((point, idx) => {
+            const li = document.createElement('li');
+            li.className = "flex items-start gap-3 bg-slate-900/50 p-3.5 rounded-xl border border-slate-800/80 text-sm text-slate-300";
+            li.innerHTML = `
+              <span class="flex-shrink-0 w-6 h-6 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 font-semibold text-xs flex items-center justify-center">${idx + 1}</span>
+              <span class="leading-relaxed">${point}</span>
+            `;
+            bulletsContainer.appendChild(li);
+          });
+        }
+
+        resultsCard.classList.remove('hidden');
+        resultsCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+      } catch (err) {
+        errorMessage.innerText = err.message || "Failed to generate study notes. Please check connection and try again.";
+        errorAlert.classList.remove('hidden');
+      } finally {
+        btn.disabled = false;
+        btnSpinner.classList.add('hidden');
+        btnText.innerText = "✨ Generate Study Notes";
+      }
+    }
+
+    function copySummary() {
+      const text = document.getElementById('summaryContent').innerText;
+      if (!text) return;
+      navigator.clipboard.writeText(text).then(() => {
+        const label = document.getElementById('copyLabel');
+        label.innerText = 'Copied!';
+        setTimeout(() => label.innerText = 'Copy', 2000);
+      });
+    }
+  </script>
+</body>
+</html>
