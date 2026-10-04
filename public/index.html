@@ -5,141 +5,292 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Smart Study Notes Generator</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script>
     tailwind.config = { theme: { extend: { fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] } } } }
   </script>
+  <style>
+    body { background: radial-gradient(1200px 700px at 80% -10%, #1b2a6b 0%, transparent 60%), #0a0f1f; }
+    #bg3d { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+    .layer { position: relative; z-index: 1; }
+
+    /* Glass cards with depth */
+    .glass {
+      background: rgba(255, 255, 255, 0.06);
+      -webkit-backdrop-filter: blur(14px);
+      backdrop-filter: blur(14px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.08) inset,
+        0 24px 48px -16px rgba(0, 0, 0, 0.65),
+        0 8px 16px -8px rgba(0, 0, 0, 0.5);
+    }
+    /* Tilt toward the mouse */
+    .tilt { transition: transform 0.25s ease-out; transform-style: preserve-3d; will-change: transform; }
+
+    /* Pressable 3D button */
+    .btn3d {
+      background: linear-gradient(#4f8dff, #2563eb);
+      box-shadow: 0 6px 0 #1e40af, 0 16px 24px rgba(37, 99, 235, 0.35);
+      transition: transform 0.08s ease, box-shadow 0.08s ease;
+    }
+    .btn3d:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 0 #1e40af, 0 20px 28px rgba(37, 99, 235, 0.4); }
+    .btn3d:active:not(:disabled) { transform: translateY(5px); box-shadow: 0 1px 0 #1e40af, 0 4px 8px rgba(37, 99, 235, 0.35); }
+    .btn3d:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    .chip3d { transition: transform 0.12s ease, background 0.12s ease; }
+    .chip3d:hover { transform: translateY(-2px); background: rgba(255, 255, 255, 0.12); }
+
+    textarea, select { color-scheme: dark; }
+    select option { background: #0f172a; color: #e2e8f0; }
+    @media (prefers-reduced-motion: reduce) { .tilt, .btn3d, .chip3d { transition: none; } }
+  </style>
 </head>
-<body class="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen">
+<body class="text-slate-200 font-sans antialiased min-h-screen">
 
-  <!-- Header -->
-  <header class="bg-white border-b border-slate-200">
-    <div class="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
-      <div class="flex items-center gap-3">
-        <div class="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center">
-          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
-        </div>
-        <div>
-          <h1 class="text-base font-semibold text-slate-900 leading-tight">Smart Study Notes</h1>
-          <p class="text-xs text-slate-500">AI-powered text summarization</p>
-        </div>
-      </div>
-      <span class="hidden sm:inline-flex items-center gap-2 text-xs font-medium text-slate-600 bg-slate-100 border border-slate-200 rounded-full px-3 py-1">
-        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-        Model: DistilBART-CNN-12-6
-      </span>
-    </div>
-  </header>
+  <canvas id="bg3d" aria-hidden="true"></canvas>
 
-  <main class="max-w-5xl mx-auto px-6 py-10 space-y-8">
-
-    <!-- Intro -->
-    <section class="max-w-2xl">
-      <h2 class="text-3xl font-bold tracking-tight text-slate-900">Turn long text into concise study notes</h2>
-      <p class="mt-2 text-slate-600">Paste an article, lecture notes or a book chapter. The tool writes a short summary, lists the key points and shows how much shorter the text became.</p>
-    </section>
-
-    <!-- Input card -->
-    <section class="bg-white border border-slate-200 rounded-xl shadow-sm">
-      <div class="flex flex-wrap items-center justify-between gap-3 px-6 pt-5">
-        <label for="inputText" class="text-sm font-semibold text-slate-900">
-          Source text <span id="charCount" class="ml-1 font-normal text-slate-500">(0 words)</span>
-        </label>
-        <div class="flex items-center flex-wrap gap-2 text-sm">
-          <span class="text-slate-500">Load sample:</span>
-          <button type="button" onclick="loadSample('biology')" class="px-3 py-1 rounded-md border border-slate-200 text-slate-700 hover:bg-slate-50 transition">Biology</button>
-          <button type="button" onclick="loadSample('ai')" class="px-3 py-1 rounded-md border border-slate-200 text-slate-700 hover:bg-slate-50 transition">AI / ML</button>
-          <button type="button" onclick="loadSample('history')" class="px-3 py-1 rounded-md border border-slate-200 text-slate-700 hover:bg-slate-50 transition">History</button>
-          <button type="button" onclick="clearInput()" class="px-2 py-1 text-slate-500 hover:text-slate-800 transition">Clear</button>
-        </div>
-      </div>
-
-      <div class="px-6 py-4">
-        <textarea
-          id="inputText"
-          rows="8"
-          class="w-full rounded-lg border border-slate-300 bg-white p-4 text-slate-800 placeholder-slate-400 text-base leading-relaxed resize-y focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 transition"
-          placeholder="Paste your text here..."></textarea>
-      </div>
-
-      <div class="flex flex-wrap items-center justify-between gap-4 px-6 py-4 border-t border-slate-200 bg-slate-50 rounded-b-xl">
+  <div class="layer">
+    <!-- Header -->
+    <header class="border-b border-white/10 bg-white/5 backdrop-blur">
+      <div class="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
         <div class="flex items-center gap-3">
-          <label for="summaryMode" class="text-sm font-medium text-slate-700">Summary length</label>
-          <select id="summaryMode" class="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600">
-            <option value="balanced" selected>Balanced</option>
-            <option value="concise">Concise (shortest)</option>
-            <option value="detailed">Detailed (longest)</option>
-          </select>
+          <div class="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-600/40">
+            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+          </div>
+          <div>
+            <h1 class="text-base font-semibold text-white leading-tight">Smart Study Notes</h1>
+            <p class="text-xs text-slate-400">AI-powered text summarization</p>
+          </div>
         </div>
-
-        <button
-          id="generateBtn"
-          onclick="generateNotes()"
-          class="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 active:bg-blue-800 transition shadow-sm disabled:opacity-60 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-600">
-          <svg id="btnSpinner" class="hidden animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
-          </svg>
-          <span id="btnText">Generate notes</span>
-        </button>
+        <span class="hidden sm:inline-flex items-center gap-2 text-xs font-medium text-slate-300 bg-white/5 border border-white/10 rounded-full px-3 py-1">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+          Model: DistilBART-CNN-12-6
+        </span>
       </div>
-    </section>
+    </header>
 
-    <!-- Error -->
-    <div id="errorAlert" class="hidden rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
-      <div id="errorMessage">An error occurred while generating study notes.</div>
-    </div>
+    <main class="max-w-5xl mx-auto px-6 py-10 space-y-8">
 
-    <!-- Results -->
-    <section id="resultsCard" class="hidden space-y-6">
+      <!-- Intro -->
+      <section class="max-w-2xl">
+        <h2 class="text-4xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white via-blue-100 to-blue-400">Turn long text into concise study notes</h2>
+        <p class="mt-3 text-slate-300">Paste an article, lecture notes or a book chapter. The tool writes a short summary, lists the key points and shows how much shorter the text became.</p>
+      </section>
 
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-          <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Original</p>
-          <p class="mt-1 text-2xl font-semibold text-slate-900"><span id="statOrig">0</span> <span class="text-sm font-normal text-slate-500">words</span></p>
+      <!-- Input card -->
+      <section class="glass rounded-2xl">
+        <div class="flex flex-wrap items-center justify-between gap-3 px-6 pt-5">
+          <label for="inputText" class="text-sm font-semibold text-white">
+            Source text <span id="charCount" class="ml-1 font-normal text-slate-400">(0 words)</span>
+          </label>
+          <div class="flex items-center flex-wrap gap-2 text-sm">
+            <span class="text-slate-400">Load sample:</span>
+            <button type="button" onclick="loadSample('biology')" class="chip3d px-3 py-1 rounded-md border border-white/15 bg-white/5 text-slate-200">Biology</button>
+            <button type="button" onclick="loadSample('ai')" class="chip3d px-3 py-1 rounded-md border border-white/15 bg-white/5 text-slate-200">AI / ML</button>
+            <button type="button" onclick="loadSample('history')" class="chip3d px-3 py-1 rounded-md border border-white/15 bg-white/5 text-slate-200">History</button>
+            <button type="button" onclick="clearInput()" class="px-2 py-1 text-slate-400 hover:text-white transition">Clear</button>
+          </div>
         </div>
-        <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-          <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Summary</p>
-          <p class="mt-1 text-2xl font-semibold text-slate-900"><span id="statSumm">0</span> <span class="text-sm font-normal text-slate-500">words</span></p>
-        </div>
-        <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-          <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Words saved</p>
-          <p class="mt-1 text-2xl font-semibold text-slate-900"><span id="statSaved">0</span> <span class="text-sm font-normal text-slate-500">words</span></p>
-        </div>
-        <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-          <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Reduction</p>
-          <p id="statPct" class="mt-1 text-2xl font-semibold text-blue-600">0%</p>
-        </div>
-      </div>
 
-      <div class="bg-white border border-slate-200 rounded-xl shadow-sm">
-        <div class="flex items-center justify-between px-6 py-4 border-b border-slate-200">
-          <h3 class="text-sm font-semibold text-slate-900">Summary</h3>
-          <button onclick="copySummary()" class="inline-flex items-center gap-1.5 text-sm text-slate-600 hover:text-blue-600 transition">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"/></svg>
-            <span id="copyLabel">Copy</span>
+        <div class="px-6 py-4">
+          <textarea
+            id="inputText"
+            rows="8"
+            class="w-full rounded-xl border border-white/15 bg-slate-950/60 p-4 text-slate-100 placeholder-slate-500 text-base leading-relaxed resize-y shadow-inner focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+            placeholder="Paste your text here..."></textarea>
+        </div>
+
+        <div class="flex flex-wrap items-center justify-between gap-4 px-6 py-5 border-t border-white/10">
+          <div class="flex items-center gap-3">
+            <label for="summaryMode" class="text-sm font-medium text-slate-300">Summary length</label>
+            <select id="summaryMode" class="rounded-md border border-white/15 bg-slate-950/60 px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option value="balanced" selected>Balanced</option>
+              <option value="concise">Concise (shortest)</option>
+              <option value="detailed">Detailed (longest)</option>
+            </select>
+          </div>
+
+          <button
+            id="generateBtn"
+            onclick="generateNotes()"
+            class="btn3d inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 focus:ring-blue-400">
+            <svg id="btnSpinner" class="hidden animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+            </svg>
+            <span id="btnText">Generate notes</span>
           </button>
         </div>
-        <p id="summaryContent" class="px-6 py-5 text-slate-700 leading-relaxed"></p>
+      </section>
+
+      <!-- Error -->
+      <div id="errorAlert" class="hidden rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-300" role="alert">
+        <div id="errorMessage">An error occurred while generating study notes.</div>
       </div>
 
-      <div class="bg-white border border-slate-200 rounded-xl shadow-sm">
-        <div class="px-6 py-4 border-b border-slate-200">
-          <h3 class="text-sm font-semibold text-slate-900">Key points</h3>
+      <!-- Results -->
+      <section id="resultsCard" class="hidden space-y-6">
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4" style="perspective: 1000px;">
+          <div data-tilt="14" class="tilt glass rounded-2xl p-4">
+            <p class="text-xs font-medium uppercase tracking-wide text-slate-400">Original</p>
+            <p class="mt-1 text-2xl font-semibold text-white"><span id="statOrig">0</span> <span class="text-sm font-normal text-slate-400">words</span></p>
+          </div>
+          <div data-tilt="14" class="tilt glass rounded-2xl p-4">
+            <p class="text-xs font-medium uppercase tracking-wide text-slate-400">Summary</p>
+            <p class="mt-1 text-2xl font-semibold text-white"><span id="statSumm">0</span> <span class="text-sm font-normal text-slate-400">words</span></p>
+          </div>
+          <div data-tilt="14" class="tilt glass rounded-2xl p-4">
+            <p class="text-xs font-medium uppercase tracking-wide text-slate-400">Words saved</p>
+            <p class="mt-1 text-2xl font-semibold text-white"><span id="statSaved">0</span> <span class="text-sm font-normal text-slate-400">words</span></p>
+          </div>
+          <div data-tilt="14" class="tilt glass rounded-2xl p-4">
+            <p class="text-xs font-medium uppercase tracking-wide text-slate-400">Reduction</p>
+            <p id="statPct" class="mt-1 text-2xl font-semibold text-blue-400">0%</p>
+          </div>
         </div>
-        <ul id="bulletsList" class="divide-y divide-slate-100"></ul>
-      </div>
-    </section>
-  </main>
 
-  <footer class="border-t border-slate-200 bg-white mt-10">
-    <div class="max-w-5xl mx-auto px-6 py-5 text-xs text-slate-500 flex flex-wrap justify-between gap-2">
-      <span>Smart Study Notes Generator</span>
-      <span>Powered by Hugging Face Transformers &middot; Hosted on Vercel</span>
-    </div>
-  </footer>
+        <div data-tilt="3" class="tilt glass rounded-2xl">
+          <div class="flex items-center justify-between px-6 py-4 border-b border-white/10">
+            <h3 class="text-sm font-semibold text-white">Summary</h3>
+            <button onclick="copySummary()" class="inline-flex items-center gap-1.5 text-sm text-slate-300 hover:text-blue-300 transition">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"/></svg>
+              <span id="copyLabel">Copy</span>
+            </button>
+          </div>
+          <p id="summaryContent" class="px-6 py-5 text-slate-200 leading-relaxed"></p>
+        </div>
+
+        <div data-tilt="3" class="tilt glass rounded-2xl">
+          <div class="px-6 py-4 border-b border-white/10">
+            <h3 class="text-sm font-semibold text-white">Key points</h3>
+          </div>
+          <ul id="bulletsList" class="divide-y divide-white/10"></ul>
+        </div>
+      </section>
+    </main>
+
+    <footer class="border-t border-white/10 bg-white/5 backdrop-blur mt-10">
+      <div class="max-w-5xl mx-auto px-6 py-5 text-xs text-slate-400 flex flex-wrap justify-between gap-2">
+        <span>Smart Study Notes Generator</span>
+        <span>Powered by Hugging Face Transformers &middot; Hosted on Vercel</span>
+      </div>
+    </footer>
+  </div>
+
+  <!-- 3D background (Three.js). The page still works if this fails to load. -->
+  <script>
+    (function () {
+      const canvas = document.getElementById('bg3d');
+      if (!window.THREE || !canvas) return;
+      let renderer;
+      try { renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true }); } catch (e) { return; }
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+
+      const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(55, 1, 0.1, 100);
+      camera.position.z = 9;
+      const group = new THREE.Group();
+      scene.add(group);
+
+      // Big wireframe shapes
+      const outer = new THREE.Mesh(
+        new THREE.IcosahedronGeometry(2.8, 1),
+        new THREE.MeshBasicMaterial({ color: 0x4f7cff, wireframe: true, transparent: true, opacity: 0.32 })
+      );
+      outer.position.set(5, 1.2, -3);
+      group.add(outer);
+      const inner = new THREE.Mesh(
+        new THREE.OctahedronGeometry(1.5, 0),
+        new THREE.MeshBasicMaterial({ color: 0x8b5cf6, wireframe: true, transparent: true, opacity: 0.5 })
+      );
+      inner.position.copy(outer.position);
+      group.add(inner);
+
+      // Floating "document pages"
+      const pages = [];
+      const pageGeo = new THREE.PlaneGeometry(1.1, 1.5);
+      const edgeGeo = new THREE.EdgesGeometry(pageGeo);
+      for (let i = 0; i < 16; i++) {
+        const page = new THREE.Mesh(pageGeo, new THREE.MeshBasicMaterial({ color: 0x7da2ff, transparent: true, opacity: 0.08, side: THREE.DoubleSide }));
+        page.add(new THREE.LineSegments(edgeGeo, new THREE.LineBasicMaterial({ color: 0x8fb0ff, transparent: true, opacity: 0.35 })));
+        page.position.set((Math.random() - 0.5) * 20, (Math.random() - 0.5) * 12, -7 + Math.random() * 7);
+        page.rotation.set(Math.random() * 3, Math.random() * 3, Math.random() * 3);
+        page.userData = { speed: 0.1 + Math.random() * 0.25, phase: Math.random() * 6.28, baseY: page.position.y };
+        group.add(page);
+        pages.push(page);
+      }
+
+      // Particle field
+      const N = 350, pos = new Float32Array(N * 3);
+      for (let i = 0; i < N; i++) {
+        pos[i * 3] = (Math.random() - 0.5) * 30;
+        pos[i * 3 + 1] = (Math.random() - 0.5) * 18;
+        pos[i * 3 + 2] = -10 + Math.random() * 14;
+      }
+      const pGeo = new THREE.BufferGeometry();
+      pGeo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+      const points = new THREE.Points(pGeo, new THREE.PointsMaterial({ color: 0xaac4ff, size: 0.04, transparent: true, opacity: 0.6 }));
+      scene.add(points);
+
+      function resize() {
+        const w = window.innerWidth, h = window.innerHeight;
+        renderer.setSize(w, h, false);
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+        outer.position.x = inner.position.x = w < 700 ? 2.5 : 5;
+      }
+      window.addEventListener('resize', resize);
+      resize();
+
+      let mx = 0, my = 0;
+      window.addEventListener('mousemove', function (e) {
+        mx = (e.clientX / window.innerWidth - 0.5) * 2;
+        my = (e.clientY / window.innerHeight - 0.5) * 2;
+      });
+
+      const clock = new THREE.Clock();
+      function frame() {
+        const t = clock.getElapsedTime();
+        if (!reduce) {
+          outer.rotation.x = t * 0.12; outer.rotation.y = t * 0.18;
+          inner.rotation.x = -t * 0.2; inner.rotation.y = -t * 0.25;
+          pages.forEach(function (p) {
+            p.rotation.x += 0.002 * p.userData.speed * 10;
+            p.rotation.y += 0.003 * p.userData.speed * 10;
+            p.position.y = p.userData.baseY + Math.sin(t * p.userData.speed + p.userData.phase) * 0.4;
+          });
+          points.rotation.y = t * 0.01;
+          camera.position.x += (mx * 0.8 - camera.position.x) * 0.04;
+          camera.position.y += (-my * 0.5 - camera.position.y) * 0.04;
+          camera.lookAt(0, 0, 0);
+        }
+        renderer.render(scene, camera);
+        if (!reduce) requestAnimationFrame(frame);
+      }
+      frame();
+    })();
+
+    // Tilt cards toward the mouse
+    (function () {
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      document.querySelectorAll('[data-tilt]').forEach(function (el) {
+        const max = parseFloat(el.dataset.tilt) || 8;
+        el.addEventListener('mousemove', function (e) {
+          const r = el.getBoundingClientRect();
+          const x = (e.clientX - r.left) / r.width - 0.5;
+          const y = (e.clientY - r.top) / r.height - 0.5;
+          el.style.transform = 'perspective(900px) rotateX(' + (-y * max) + 'deg) rotateY(' + (x * max) + 'deg) translateZ(6px)';
+        });
+        el.addEventListener('mouseleave', function () { el.style.transform = ''; });
+      });
+    })();
+  </script>
 
   <script>
     const SAMPLES = {
@@ -224,9 +375,9 @@
         if (data.key_points && data.key_points.length > 0) {
           data.key_points.forEach((point, idx) => {
             const li = document.createElement('li');
-            li.className = "flex items-start gap-4 px-6 py-3.5 text-slate-700";
+            li.className = "flex items-start gap-4 px-6 py-3.5 text-slate-200";
             const num = document.createElement('span');
-            num.className = "flex-shrink-0 w-6 h-6 rounded-full bg-blue-50 text-blue-700 text-xs font-semibold flex items-center justify-center";
+            num.className = "flex-shrink-0 w-6 h-6 rounded-full bg-blue-500/20 text-blue-300 text-xs font-semibold flex items-center justify-center";
             num.textContent = idx + 1;
             const txt = document.createElement('span');
             txt.className = "leading-relaxed";
